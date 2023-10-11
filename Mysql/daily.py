@@ -2,14 +2,17 @@ import requests
 import pandas as pd
 import time
 from sqlalchemy import create_engine
-from datetime import datetime
+from datetime import datetime, timedelta
+
 
 
 if __name__ == "__main__":
     # connect to  MySql DataBase
     # db_connection_str = 'mysql+pymysql://root:@localhost/stockDB'
     # for home
-    db_connection_str = 'mysql+pymysql://root:1234@localhost/stock_db'
+    # db_connection_str = 'mysql+pymysql://root:1234@localhost/stock_db'
+    # for ec2
+    db_connection_str = 'mysql+pymysql://stock:1234@%/stock_db'
     db_connection = create_engine(db_connection_str)
     conn = db_connection.connect()
 
