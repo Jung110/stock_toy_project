@@ -21,7 +21,9 @@ if __name__ == "__main__":
     # for school
     # key_path = "/Users/c05/Desktop/learn/web/PipeLine_Project/key.txt"
     # for home
-    key_path = "C:\\Users\\AW17R4\\.appkey\\open_stock_api_key.txt"
+    # key_path = "C:\\Users\\AW17R4\\.appkey\\open_stock_api_key.txt"
+    # for ec2
+    key_path = "~/apikey/key.txt"
     url = "https://apis.data.go.kr/1160100/service/GetStockSecuritiesInfoService/getStockPriceInfo"
 
 
