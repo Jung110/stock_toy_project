@@ -16,7 +16,8 @@ if __name__ == "__main__":
     conn = db_connection.connect()
 
     ## 날짜 가져오기
-    beginBasDt=f'{datetime.today().year}{datetime.today().month }{datetime.today().day}'
+    yesterday = datetime.today() - timedelta(days=1)
+    beginBasDt=f'{yesterday.year}{yesterday.month }{yesterday.day}'
 
     # request data to API
     headers = {'Content-Type': 'application/json', 'charset': 'UTF-8', 'Accept': '*/*'}
@@ -36,7 +37,7 @@ if __name__ == "__main__":
             , 'numOfRows' : 10000
             , 'pageNo' : 1
             , 'resultType' : "json"
-            , 'beginBasDt' : '20210101'
+            , 'beginBasDt' : beginBasDt
             }
 
 
