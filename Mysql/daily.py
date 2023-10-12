@@ -5,14 +5,13 @@ from sqlalchemy import create_engine
 from datetime import datetime, timedelta
 
 
-
 if __name__ == "__main__":
     # connect to  MySql DataBase
     # db_connection_str = 'mysql+pymysql://root:@localhost/stockDB'
     # for home
     # db_connection_str = 'mysql+pymysql://root:1234@localhost/stock_db'
     # for ec2
-    db_connection_str = 'mysql+pymysql://stock:1234@%/stock_db'
+    db_connection_str = 'mysql+pymysql://root:1234@localhost/stock_db'
     db_connection = create_engine(db_connection_str)
     conn = db_connection.connect()
 
@@ -26,7 +25,7 @@ if __name__ == "__main__":
     # for home
     # key_path = "C:\\Users\\AW17R4\\.appkey\\open_stock_api_key.txt"
     # for ec2
-    key_path = "~/apikey/key.txt"
+    key_path = "/home/ubuntu/apikey/key.txt"
     url = "https://apis.data.go.kr/1160100/service/GetStockSecuritiesInfoService/getStockPriceInfo"
 
 
@@ -40,7 +39,13 @@ if __name__ == "__main__":
             , 'beginBasDt' : '20210101'
             }
 
-    response = requests.get(url ,params=params)
+
+
+    response = requests.get(url ,params=params, verify=False)
+    # response = urllib3.PoolManager().request(
+    #     'GET',
+    #     url, 
+    #     fields = params)
     total_count = response.json()['response']['body']['totalCount']
 
 
@@ -49,11 +54,10 @@ if __name__ == "__main__":
     if total_count > params['numOfRows']:
         for i in range(2,total_count//10000+1):
             params['pageNo'] = i
-
+            errorCount = 1
             while True:
-                errorCount = 1
                 try:
-                    response = requests.get(url ,params=params)
+                    response = requests.get(url ,params=params,verify=True)
                     temp_df =  pd.DataFrame(response.json()['response']['body']['items']['item'])
                     temp_df.to_sql(name='stockinfotable', con=db_connection, if_exists='append',index=False)
                     break
