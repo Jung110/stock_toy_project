@@ -1,7 +1,7 @@
 import requests
 import pandas as pd
 import time
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine,text
 from datetime import datetime, timedelta
 from bs4 import BeautifulSoup as bs
 
@@ -11,25 +11,26 @@ def getStockCode():
 
 
     elements = soup.select("tbody.tbody_content tr td a")
-    sendJson = {}
+    stockCodeJson = {}
 
 
     for e in elements:
         data = str(e).split(",")
         code , codeName, isincode = data[1][1:-1] , data[2][1:-1].strip(), data[-1][1:13]
-        sendJson[code] = (codeName,isincode)
-    return sendJson
+        stockCodeJson[code] = (codeName,isincode)
+    return stockCodeJson
 
-def saveStockCode(sendJson:dict ,db_connection):
-    stockCodeDf = pd.DataFrame(sendJson).T.reset_index()
+def saveStockCode(stockCodeJson:dict ,db_connection):
+    stockCodeDf = pd.DataFrame(stockCodeJson).T.reset_index()
     stockCodeDf.columns = ['srtnCd','itmsNm','isinCd']
     with db_connection.connect() as conn:
-        conn.execute('TRUNCATE stock_db.stock_code;')
+        conn.execute(text('TRUNCATE TABLE stock_code;'))
+        conn.commit()
     stockCodeDf.to_sql(name='stock_code', con=db_connection, if_exists='append',index=False)  
     
 
 
-def getStockInfo():
+def getStockInfo(db_connection):
     ## 날짜 가져오기
     yesterday = datetime.today() - timedelta(days=1)
     beginBasDt=f'{yesterday.year}{yesterday.month }{yesterday.day}'
@@ -45,22 +46,6 @@ def getStockInfo():
     url = "https://apis.data.go.kr/1160100/service/GetStockSecuritiesInfoService/getStockPriceInfo"
 
 
-
-
-
-if __name__ == "__main__":
-    # connect to  MySql DataBase
-    # db_connection_str = 'mysql+pymysql://root:@localhost/stockDB'
-    # for home
-    # db_connection_str = 'mysql+pymysql://root:1234@localhost/stock_db'
-    # for ec2
-    db_connection_str = 'mysql+pymysql://root:1234@localhost/stock_db'
-    db_connection = create_engine(db_connection_str)
-    conn = db_connection.connect()
-
-    
-
-
     with open(key_path,'r',encoding="UTF-8") as f:
         key = f.readline()
 
@@ -71,11 +56,8 @@ if __name__ == "__main__":
             , 'beginBasDt' : '20210101'
             }
 
-
-
     response = requests.get(url ,params=params)
     total_count = response.json()['response']['body']['totalCount']
-
 
     df = pd.DataFrame(response.json()['response']['body']['items']['item'])
     df.to_sql(name='stockinfotable', con=db_connection, if_exists='append',index=False)  
@@ -96,4 +78,35 @@ if __name__ == "__main__":
                         break
                     continue
             time.sleep(0.5)
-    db_connection.close()
+
+
+
+def getDatabaseConnection():
+    # connect to  MySql DataBase
+    # db_connection_str = 'mysql+pymysql://root:@localhost/stockDB'
+    # for home
+    # db_connection_str = 'mysql+pymysql://root:1234@localhost/stock_db'
+    # for ec2
+    db_connection_str = 'mysql+pymysql://root:1234@localhost/stock_db'
+    db_connection = create_engine(db_connection_str)
+    conn = db_connection.connect()
+    return db_connection ,conn
+
+
+
+if __name__ == "__main__":
+    db_connection,conn = getDatabaseConnection()
+    # getStockInfo(db_connection)
+    stockCodeJson = getStockCode()
+    saveStockCode(stockCodeJson,db_connection)
+    conn.close()
+
+    
+
+
+    
+
+
+    
+
+
