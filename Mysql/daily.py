@@ -3,18 +3,33 @@ import pandas as pd
 import time
 from sqlalchemy import create_engine
 from datetime import datetime, timedelta
+from bs4 import BeautifulSoup as bs
+
+def getStockCode():
+    page = requests.get("https://www.ktb.co.kr/trading/popup/itemPop.jspx")
+    soup = bs(page.text ,"html.parser")
 
 
-if __name__ == "__main__":
-    # connect to  MySql DataBase
-    # db_connection_str = 'mysql+pymysql://root:@localhost/stockDB'
-    # for home
-    # db_connection_str = 'mysql+pymysql://root:1234@localhost/stock_db'
-    # for ec2
-    db_connection_str = 'mysql+pymysql://root:1234@localhost/stock_db'
-    db_connection = create_engine(db_connection_str)
-    conn = db_connection.connect()
+    elements = soup.select("tbody.tbody_content tr td a")
+    sendJson = {}
 
+
+    for e in elements:
+        data = str(e).split(",")
+        code , codeName, isincode = data[1][1:-1] , data[2][1:-1].strip(), data[-1][1:13]
+        sendJson[code] = (codeName,isincode)
+    return sendJson
+
+def saveStockCode(sendJson:dict ,db_connection):
+    stockCodeDf = pd.DataFrame(sendJson).T.reset_index()
+    stockCodeDf.columns = ['srtnCd','itmsNm','isinCd']
+    with db_connection.connect() as conn:
+        conn.execute('TRUNCATE stock_db.stock_code;')
+    stockCodeDf.to_sql(name='stock_code', con=db_connection, if_exists='append',index=False)  
+    
+
+
+def getStockInfo():
     ## 날짜 가져오기
     yesterday = datetime.today() - timedelta(days=1)
     beginBasDt=f'{yesterday.year}{yesterday.month }{yesterday.day}'
@@ -30,6 +45,22 @@ if __name__ == "__main__":
     url = "https://apis.data.go.kr/1160100/service/GetStockSecuritiesInfoService/getStockPriceInfo"
 
 
+
+
+
+if __name__ == "__main__":
+    # connect to  MySql DataBase
+    # db_connection_str = 'mysql+pymysql://root:@localhost/stockDB'
+    # for home
+    # db_connection_str = 'mysql+pymysql://root:1234@localhost/stock_db'
+    # for ec2
+    db_connection_str = 'mysql+pymysql://root:1234@localhost/stock_db'
+    db_connection = create_engine(db_connection_str)
+    conn = db_connection.connect()
+
+    
+
+
     with open(key_path,'r',encoding="UTF-8") as f:
         key = f.readline()
 
@@ -37,16 +68,12 @@ if __name__ == "__main__":
             , 'numOfRows' : 10000
             , 'pageNo' : 1
             , 'resultType' : "json"
-            , 'beginBasDt' : beginBasDt
+            , 'beginBasDt' : '20210101'
             }
 
 
 
-    response = requests.get(url ,params=params, verify=False)
-    # response = urllib3.PoolManager().request(
-    #     'GET',
-    #     url, 
-    #     fields = params)
+    response = requests.get(url ,params=params)
     total_count = response.json()['response']['body']['totalCount']
 
 
@@ -69,3 +96,4 @@ if __name__ == "__main__":
                         break
                     continue
             time.sleep(0.5)
+    db_connection.close()
