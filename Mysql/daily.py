@@ -96,7 +96,7 @@ def getDatabaseConnection():
 
 if __name__ == "__main__":
     db_connection,conn = getDatabaseConnection()
-    # getStockInfo(db_connection)
+    getStockInfo(db_connection)
     stockCodeJson = getStockCode()
     saveStockCode(stockCodeJson,db_connection)
     conn.close()
