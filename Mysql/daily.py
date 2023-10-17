@@ -53,7 +53,7 @@ def getStockInfo(db_connection):
             , 'numOfRows' : 10000
             , 'pageNo' : 1
             , 'resultType' : "json"
-            , 'beginBasDt' : '20210101'
+            , 'beginBasDt' : beginBasDt
             }
 
     response = requests.get(url ,params=params)
