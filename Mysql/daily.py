@@ -32,7 +32,7 @@ def saveStockCode(stockCodeJson:dict ,db_connection):
 
 def getStockInfo(db_connection):
     ## 날짜 가져오기
-    yesterday = datetime.today() - timedelta(days=1)
+    yesterday = datetime.today() + timedelta(days=1)
     beginBasDt=f'{yesterday.year}{yesterday.month }{yesterday.day}'
 
     # request data to API
@@ -42,7 +42,7 @@ def getStockInfo(db_connection):
     # for home
     # key_path = "C:\\Users\\AW17R4\\.appkey\\open_stock_api_key.txt"
     # for ec2
-    key_path = "/home/ubuntu/apikey/key.txt"
+    key_path = "./key.txt"
     url = "https://apis.data.go.kr/1160100/service/GetStockSecuritiesInfoService/getStockPriceInfo"
 
 
@@ -53,7 +53,7 @@ def getStockInfo(db_connection):
             , 'numOfRows' : 10000
             , 'pageNo' : 1
             , 'resultType' : "json"
-            , 'beginBasDt' : beginBasDt
+            , 'beginBasDt' : '20210101'
             }
 
     response = requests.get(url ,params=params)
@@ -87,7 +87,7 @@ def getDatabaseConnection():
     # for home
     # db_connection_str = 'mysql+pymysql://root:1234@localhost/stock_db'
     # for ec2
-    db_connection_str = 'mysql+pymysql://root:1234@localhost/stock_db'
+    db_connection_str = 'mysql+pymysql://stock_user:1234asde@172.31.13.248/stockDB'
     db_connection = create_engine(db_connection_str)
     conn = db_connection.connect()
     return db_connection ,conn
