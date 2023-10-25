@@ -6,26 +6,40 @@ from datetime import datetime, timedelta
 from bs4 import BeautifulSoup as bs
 
 def getStockCode():
+    """
+    현재 있는 모든 종목의 종목명 , isin Code , 종목 코드를 크롤링 하여 가지고 Json형식으로 반환하는 함수 
+    request와 BeautifulSoup4를 사용하였다.
+    """
+
+    # requests를 이용하여 해당 페이지를 가지고 온다.
     page = requests.get("https://www.ktb.co.kr/trading/popup/itemPop.jspx")
+    # BeautifulSoup4를 이용하여 해당 페이지의 html 내용을 전부 가지고 온다.
     soup = bs(page.text ,"html.parser")
-
-
+    # 그 중 tbody.tbody_content  중 tr 태그 중 td 중 a 태그 안에 있는 데이터를 전부 가지도 온다.
     elements = soup.select("tbody.tbody_content tr td a")
     stockCodeJson = {}
 
 
     for e in elements:
+        # 필요한 데이터만 추출 하여 dict 형식으로 저장한다.
         data = str(e).split(",")
         code , codeName, isincode = data[1][1:-1] , data[2][1:-1].strip(), data[-1][1:13]
         stockCodeJson[code] = (codeName,isincode)
     return stockCodeJson
 
 def saveStockCode(stockCodeJson:dict ,db_connection):
+    """
+    json 변수와 sqlalchemy의 create_engine으로 생성한 객체를 인수로 받아서 Json데이터를 MySql에 저장하는 함수
+    """
+    # 데이터를 넣기 편하게 Pandas DataFrame 으로 변환
     stockCodeDf = pd.DataFrame(stockCodeJson).T.reset_index()
+    # 컬럼명 설정
     stockCodeDf.columns = ['srtnCd','itmsNm','isinCd']
+    # 과거 종목 정보 데이터 버리기
     with db_connection.connect() as conn:
         conn.execute(text('TRUNCATE TABLE stock_code;'))
         conn.commit()
+    # 데이터 Mysql에 넣기
     stockCodeDf.to_sql(name='stock_code', con=db_connection, if_exists='append',index=False)  
     
 
