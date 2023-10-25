@@ -32,8 +32,7 @@ def saveStockCode(stockCodeJson:dict ,db_connection):
 
 def getStockInfo(db_connection):
     ## 날짜 가져오기
-    yesterday = datetime.today() + timedelta(days=1)
-    beginBasDt=f'{yesterday.year}{yesterday.month }{yesterday.day}'
+    last_day = getLastDay(db_connection)
 
     # request data to API
     headers = {'Content-Type': 'application/json', 'charset': 'UTF-8', 'Accept': '*/*'}
@@ -53,12 +52,14 @@ def getStockInfo(db_connection):
             , 'numOfRows' : 10000
             , 'pageNo' : 1
             , 'resultType' : "json"
-            , 'beginBasDt' : '20210101'
+            , 'beginBasDt' : last_day
             }
 
     response = requests.get(url ,params=params)
     total_count = response.json()['response']['body']['totalCount']
-
+    if total_count == 0 :
+        print("Nothing to Update")
+        return 0
     df = pd.DataFrame(response.json()['response']['body']['items']['item'])
     df.to_sql(name='stockinfotable', con=db_connection, if_exists='append',index=False)  
     if total_count > params['numOfRows']:
@@ -75,6 +76,7 @@ def getStockInfo(db_connection):
                     time.sleep(5)
                     print(f'error:{errorCount}')
                     if errorCount==10:
+                        print(f"Error: {temp_df}")
                         break
                     continue
             time.sleep(0.5)
@@ -91,6 +93,14 @@ def getDatabaseConnection():
     db_connection = create_engine(db_connection_str)
     conn = db_connection.connect()
     return db_connection ,conn
+
+
+def getLastDay(db_connection):
+    with db_connection.connect() as conn:
+        last_day = pd.read_sql_query(text("SELECT basDt FROM stockDB.stockinfotable ORDER BY basDt DESC LIMIT 1;"), conn)
+    start_day = (last_day + timedelta(days=1))['basDt'][0]
+    result  = str(start_day.date()).replace("-","")
+    return result
 
 
 
