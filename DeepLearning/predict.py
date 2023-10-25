@@ -13,7 +13,7 @@ warnings.filterwarnings('ignore')
 
 
 def getDataFromDB():
-    db_connection_str = 'mysql+pymysql://root:1234@localhost/stock_db'
+    db_connection_str = 'mysql+pymysql://stock_user:1234asde@172.31.13.248/stockDB'
     db_connection = create_engine(db_connection_str)
     with db_connection.connect() as conn:
         data_df = pd.read_sql_table("stockinfotable", conn)
@@ -22,9 +22,13 @@ def getDataFromDB():
 def getCodeList(data_df):
     return list(data_df['srtnCd'].unique())
 
+
 def predictFutureStockPrice(srtnCd:str ,conn ,data_df):
 
-    
+
+    db_connection_str = 'mysql+pymysql://stock_user:1234asde@172.31.13.248/stockDB'
+    db_connection = create_engine(db_connection_str, pool_pre_ping=True)
+
     today = datetime.today().strftime("%Y%m%d")
     x_cols = ['clpr','vs','fltRt','mkp','lopr','trqu','lstgStCnt']
     y_col = 'tmkp'
@@ -65,14 +69,15 @@ def predictFutureStockPrice(srtnCd:str ,conn ,data_df):
     pred_df.columns = ['basDt','srtnCd','mkp','mae']
     
 
-    db_connection_str = 'mysql+pymysql://root:1234@localhost/stock_db'
+    db_connection_str = 'mysql+pymysql://stock_user:1234asde@172.31.13.248/stockDB'
     db_connection = create_engine(db_connection_str, pool_pre_ping=True)
 
     try:
         pred_df.to_sql(name='stockpredicttable' , con=conn , if_exists='append',index=False)
     except:
-        print(srtnCd)
-    return 1
+        print("Error or Already predict Check DB")
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
@@ -81,6 +86,7 @@ if __name__ == "__main__":
     code_list = getCodeList(data_df)
 
     for code in code_list:
-        predictFutureStockPrice(code,db_connection,data_df)
+        if predictFutureStockPrice(code,db_connection,data_df) == 1:
+            break
         
 
