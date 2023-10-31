@@ -4,6 +4,8 @@ import time
 from sqlalchemy import create_engine,text
 from datetime import datetime, timedelta
 from bs4 import BeautifulSoup as bs
+import sys
+
 
 def getStockCode():
     """
@@ -55,12 +57,21 @@ def getStockInfo(db_connection):
     # for home
     # key_path = "C:\\Users\\AW17R4\\.appkey\\open_stock_api_key.txt"
     # for ec2
-    key_path = "./key.txt"
+
+    if len(sys.argv) != 2:
+        print(sys.argv)
+        print("키값이 입력이 되지 않았습니다.")
+        sys.exit()
+    
+
+    key = sys.argv[1]
+
+    if key == "test":
+        print(sys.argv)
+        print("키값이 제대로 입력되지 않았습니다.")
+        sys.exit()
+
     url = "https://apis.data.go.kr/1160100/service/GetStockSecuritiesInfoService/getStockPriceInfo"
-
-
-    with open(key_path,'r',encoding="UTF-8") as f:
-        key = f.readline()
 
     params = {'serviceKey' : key
             , 'numOfRows' : 10000
@@ -68,7 +79,7 @@ def getStockInfo(db_connection):
             , 'resultType' : "json"
             , 'beginBasDt' : last_day
             }
-
+    # api 에 데이터 요청
     response = requests.get(url ,params=params)
     total_count = response.json()['response']['body']['totalCount']
     if total_count == 0 :
@@ -110,6 +121,7 @@ def getDatabaseConnection():
 
 
 def getLastDay(db_connection):
+    # databas에서 제일 마지막에 저장된 날짜를 기자고 오기
     with db_connection.connect() as conn:
         last_day = pd.read_sql_query(text("SELECT basDt FROM stockDB.stockinfotable ORDER BY basDt DESC LIMIT 1;"), conn)
     start_day = (last_day + timedelta(days=1))['basDt'][0]
